@@ -7,7 +7,7 @@ Some considered language options:
 - Typdef (like in C)
 - Functional
 - Easy to write (like python)
-<b> Both `;` and `\n` as statement separators
-<b> Both `\t` and `{...}` as block separators
+<br> Both `;` and `\n` as statement separators
+<br> Both `\t` and `{...}` as block separators
 - For variable of type `char`, do the operation on the ascii value (`char c = 'a'` c + 1 would be 'b')
 - Arrays of numbers would work like `int arr[3] = 1, 2, 3; arr++;` and arr would be `[2, 3, 4]`
