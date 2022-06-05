@@ -3,7 +3,6 @@ We are still deciding how we want this language to work, and are open to suggest
 The end goal is to make it for the LC-3.
 Pehaps, we may even make it work for other systems as well.
 
-Pehaps, we may even make it work for other systems as well
 Some considered language options:
 - Typdef (like in C)
 - Functional
