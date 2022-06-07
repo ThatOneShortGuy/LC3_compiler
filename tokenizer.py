@@ -11,32 +11,26 @@ KEYWORDS = ['while', 'if', 'elif', 'else', 'for']
 TYPES = ['int', 'bool', 'string', 'char']
 OPERATIONS = ['+', '-', '*', '/', '%', '=', '==', '!=', '>', '<', '>=', '<=']
 
+
 def tokenize(text):
     lines = text.split('\n')
     variables = []
     tokens = []
-    isType = True
-    isOp = True
-    isKeyword = True
-    word = ''
-    prev = ''
-    ziptypes = tuple(zip(*TYPES))
-    zipops = tuple(zip(*OPERATIONS))
-    zipkeywords = tuple(zip(*KEYWORDS))
-    for line in lines:
-        for i, char in enumerate(line):
-            if char.startswith('//') or char == '':
-                break
-            if char == ' ' and not (isType or isOp or isKeyword):
-                if not (isType or isOp or isKeyword):
-                    variables.append(word)
-                tokens.append(((prev := 't' * isType + 'o' * isOp + 'k' * isKeyword), word))
-                word = ''
+    for i, line in enumerate(lines):
+        line = line.split('=')
+        for word in line[0].split(' '):
+            if word in tuple(zip(*variables))[1]:
                 continue
-            isType = isType and char.startswith(ziptypes[i]) and prev != 't' and prev != 'o'
-            isOp = isOp and char.startswith(zipops[i])
-            isKeyword = isKeyword and char.startswith(zipkeywords[i])
-            word += char
+            if word in TYPES:
+                tokens.append(('t', word))
+                continue
+            if tokens[-1][0] == 't':
+                variables.append((tokens[-1][1], word))
+                tokens.append(('v', word))
+                continue
+            raise NameError(f'{word} is not a defined variable on line {i}')
+        if len(line) > 1:
+            tokens.append(('e', in2post(line[1])))
 
 
 if __name__ == '__main__':

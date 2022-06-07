@@ -2,6 +2,7 @@
 Stack ADT and functions for creating postfix expressions and evaluating them.
 '''
 
+
 class Stack:
     '''
     Is a stack ADT that has methods for a stack
@@ -43,18 +44,23 @@ class Stack:
         self.items = []
         self._size = 0
 
-def in2post(expr):
+
+def in2post(expr, variables=None, line=1):
     '''
-    Takes an infix expression as a string and returns an equivalent postfix expression as a string.
-    If the expression is not valid, raise a SyntaxError. If the parameter expr is not a string, raise a 
+    Takes an infix expression as a string and returns an equivalent postfix expression as a list.
+    If the expression is not valid, raise a SyntaxError. If the parameter expr is not a list, raise a 
     ValueError. 
     '''
     if not isinstance(expr, str):
         raise ValueError
     if expr == '':
         return ''
-    postfix = ''
+    postfix = ['']
     stack = Stack()
+    if variables:
+        for varType, var in variables:
+            expr = expr.replace(var, f"'{var}'")
+    isVar = False
     for char in expr:
         if char == ' ':
             continue
@@ -62,28 +68,48 @@ def in2post(expr):
             stack.push(char)
         elif char == ')':
             try:
+                if postfix[-1]:
+                    postfix.append('')
                 while stack.top() != '(':
-                    postfix += stack.pop()
+                    postfix[-1] += stack.pop()
                 stack.pop()
             except IndexError:
                 raise SyntaxError
         elif char in '+-*/':
             while char in '+-' and len(stack) and stack.top() in '+-*/':
-                postfix += stack.pop()
+                if not postfix[-1]:
+                    postfix[-1] += stack.pop()
+                else:
+                    postfix.append(stack.pop())
             while char in '*/' and len(stack) and stack.top() in '*/':
-                postfix += stack.pop()
+                if not postfix[-1]:
+                    postfix[-1] += stack.pop()
+                else:
+                    postfix.append(stack.pop())
             stack.push(char)
+        elif char == "'":
+            isVar = not isVar
+            if postfix[-1]:
+                postfix.append('')
+        elif char.isnumeric() or isVar:
+            if postfix[-1] and postfix[-1] in '+-*/':
+                postfix.append('')
+            postfix[-1] += char
         else:
-            postfix += char
+            raise NameError(f'Encountered undefined variable evaluating expression on line {line}')
     while stack.size():
-        postfix += stack.pop()
+        if not postfix[-1]:
+            postfix[-1] += stack.pop()
+        else:
+            postfix.append(stack.pop())
     return postfix
 
-def eval_postfix(expr):
+
+def eval_postfix(expr, variables=None):
     '''
-    Takes a postfix string as input and returns a number. If the expression is not valid, raise a SyntaxError.
+    Takes a postfix list as input and returns a number. If the expression is not valid, raise a SyntaxError.
     '''
-    if not isinstance(expr, str):
+    if not isinstance(expr, list):
         raise ValueError
     if expr == '':
         return 0
@@ -106,5 +132,16 @@ def eval_postfix(expr):
             elif char == '/':
                 stack.push(num1 / num2)
         else:
-            stack.push(float(char))
+            if char.isnumeric():
+                stack.push(float(char))
+            else:
+                for var, d in variables:
+                    if var == char:
+                        stack.push(float(d))
+                        break
     return stack.pop()
+
+
+if __name__ == '__main__':
+    post = in2post('2*(abd*df)-34/(abd*df-6)', (('int', 'abd'), ('int', 'df')))
+    d = eval_postfix(post, (('abd', 4), ('df', 69)))
