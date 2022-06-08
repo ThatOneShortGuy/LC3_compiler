@@ -58,7 +58,7 @@ def in2post(expr, variables=None, line=1):
     postfix = ['']
     stack = Stack()
     if variables:
-        for varType, var in variables:
+        for varType, var, size in variables:
             expr = expr.replace(var, f"'{var}'")
     isVar = False
     for char in expr:
@@ -66,6 +66,8 @@ def in2post(expr, variables=None, line=1):
             continue
         if char == '(':
             stack.push(char)
+        elif char == '[':
+            raise TypeError(f'Arrays are not suppported as constants on line {line}')
         elif char == ')':
             try:
                 if postfix[-1]:
@@ -96,7 +98,7 @@ def in2post(expr, variables=None, line=1):
                 postfix.append('')
             postfix[-1] += char
         else:
-            raise NameError(f'Encountered undefined variable evaluating expression on line {line}')
+            raise NameError(f'Encountered undefined variable "{expr[expr.find(char):expr[expr.find(char):].find(" ")+1]}" evaluating expression on line {line}')
     while stack.size():
         if not postfix[-1]:
             postfix[-1] += stack.pop()
@@ -143,5 +145,5 @@ def eval_postfix(expr, variables=None):
 
 
 if __name__ == '__main__':
-    post = in2post('2*(abd*df)-34/(abd*df-6)', (('int', 'abd'), ('int', 'df')))
+    post = in2post('2*(abd*df)- 34/(abd *df-6)', (('int', 'abd'), ('int', 'df')))
     d = eval_postfix(post, (('abd', 4), ('df', 69)))
