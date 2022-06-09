@@ -58,7 +58,7 @@ def in2post(expr, variables=None, line=1):
     postfix = ['']
     stack = Stack()
     if variables:
-        for varType, var, size in variables:
+        for var, (varType, size) in variables.items():
             expr = expr.replace(var, f"'{var}'")
     isVar = False
     for char in expr:
@@ -107,9 +107,10 @@ def in2post(expr, variables=None, line=1):
     return postfix
 
 
-def eval_postfix(expr, variables=None):
+def eval_postfix(expr, variables=None, line=1):
     '''
     Takes a postfix list as input and returns a number. If the expression is not valid, raise a SyntaxError.
+    variables is a dict{string: value} where string is the name and value is the value of the variable
     '''
     if not isinstance(expr, list):
         raise ValueError
@@ -137,7 +138,7 @@ def eval_postfix(expr, variables=None):
             if char.isnumeric():
                 stack.push(float(char))
             else:
-                for var, d in variables:
+                for var, d in variables.items():
                     if var == char:
                         stack.push(float(d))
                         break
@@ -145,5 +146,5 @@ def eval_postfix(expr, variables=None):
 
 
 if __name__ == '__main__':
-    post = in2post('2*(abd*df)- 34/(abd *df-6)', (('int', 'abd'), ('int', 'df')))
-    d = eval_postfix(post, (('abd', 4), ('df', 69)))
+    post = in2post('2*(abd*df)- 34/(abd *df-6)', {'abd': ('int', 1), 'df': ('int', 1)})
+    d = eval_postfix(post, {'abd': 2, 'df': -3})
