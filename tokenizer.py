@@ -1,11 +1,11 @@
 """
 Created on Sun Jun  5 11:41:42 2022
 
-@author: braxt
+@author: braxbrowndog@gmail.com
 
 Compiler for the LC-3 assembly language.
 """
-from expressionEvaluator import in2post, eval_postfix
+from expressionEvaluator import in2post, eval_postfix, eval_expression
 
 
 KEYWORDS = ['while', 'if', 'elif', 'else', 'for']
@@ -14,27 +14,7 @@ OPERATIONS = ['+', '-', '*', '/', '%', '=', '!=', '>', '<', '>=', '<=']
 SPECIALOPS = ('++', '--')
 
 
-def eval_expression(expression, variables):
-    '''
-    Evaluate postfix expression in assembly
-
-    Parameters
-    ----------
-    expression : list
-        Postfix expression to be evaluated.
-    variables : dict
-        Dictionary where the keys are the variable names, and the values are the types and sizes of the variables.
-
-    Returns
-    -------
-    str
-        The assembly code for the given expression.
-
-    '''
-    pass
-
-
-def makeAsm(tokens, variables) -> str:
+def makeAsm(tokens, variables, constants) -> str:
     '''
     Returns ASM code for the given tokens.
 
@@ -54,22 +34,28 @@ def makeAsm(tokens, variables) -> str:
     s = []
     if tokens[0][0] == 't':
         dtype = tokens[0][1]
-        size, var = tokens[1]
+        var, size = variables[tokens[1][1]]
         expr = tokens[2][1]
         if size > 1:
             for i in range(size):
-                s.append(f'{var}{i if i else ""}\t.FILL {expr}')
+                variables(f'{var}{i if i else ""}\t.FILL {expr}')
         else:
-            s.append(f'')
-        s.append(f'{var}{i}')
-        if dtype in ('int', 'char'):
-            s.append(f'STR R0, {expr}')
+            c, reg = eval_expression(expr, variables, constants)
+            s.extend(c)
+
+    return s
 
 
 def generateAsmFile(tokens, variables, filename='a'):
-    portion = []
+    constants = dict()
+    inner = []
+    inner.extend(makeAsm(tokens[:3], variables, constants))
     with open(f'{filename}.asm', 'w') as f:
         f.write('.ORIG x3000\n')
+        f.write(f'\tJSR #{len(constants)+len(variables)}\n')
+        f.write('\n'.join(c for c in constants.values())+'\n')
+        f.write('\n'.join(f'{v}\t.BLKW #{s}' for v, (_, s) in variables.items())+'\n\t')
+        f.write('\n\t'.join(v for v in inner)+'\n')
         f.write(open('includes/Stack.asm').read())
         f.write('\n.END')
 

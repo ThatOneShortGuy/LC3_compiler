@@ -8,9 +8,9 @@ class Stack:
     Is a stack ADT that has methods for a stack
     '''
 
-    def __init__(self):
-        self.items = []
-        self._size = 0
+    def __init__(self, items=[]):
+        self.items = list(items)
+        self._size = len(items)
 
     def __len__(self):
         return self._size
@@ -28,12 +28,12 @@ class Stack:
         self._size -= 1
         return self.items.pop()
 
-    def top(self):
+    def top(self, num=1):
         '''return the top item from the stack without removing it.
         Raise an IndexError if the stack is empty.'''
         if self._size == 0:
             raise IndexError
-        return self.items[-1]
+        return self.items[-num]
 
     def size(self):
         '''return the number of items on the stack.'''
@@ -61,6 +61,7 @@ def in2post(expr, variables=None, line=1):
         for var, (varType, size) in variables.items():
             expr = expr.replace(var, f"'{var}'")
     isVar = False
+    num = True
     for char in expr:
         if char == ' ':
             continue
@@ -73,6 +74,8 @@ def in2post(expr, variables=None, line=1):
                 if postfix[-1]:
                     postfix.append('')
                 while stack.top() != '(':
+                    if postfix[-1]:
+                        postfix.append('')
                     postfix[-1] += stack.pop()
                 stack.pop()
             except IndexError:
@@ -89,14 +92,16 @@ def in2post(expr, variables=None, line=1):
                 else:
                     postfix.append(stack.pop())
             stack.push(char)
+            num = False
         elif char == "'":
             isVar = not isVar
             if postfix[-1]:
                 postfix.append('')
         elif char.isnumeric() or isVar:
-            if postfix[-1] and postfix[-1] in '+-*/':
+            if not num or postfix[-1] and postfix[-1] in '+-*/':
                 postfix.append('')
             postfix[-1] += char
+            num = True
         else:
             raise NameError(f'Encountered undefined variable "{expr[expr.find(char):expr[expr.find(char):].find(" ")+1]}" evaluating expression on line {line}')
     while stack.size():
@@ -144,6 +149,70 @@ def eval_postfix(expr, variables=None, line=1):
                         break
     return stack.pop()
 
+def eval_expression(expression, variables, constants, reg=None):
+    '''
+    Evaluate postfix expression in assembly
+
+    Parameters
+    ----------
+    expression : list
+        Postfix expression to be evaluated.
+    variables : dict
+        Dictionary where the keys are the variable names, and the values are the types and sizes of the variables.
+
+    Returns
+    -------
+    str
+        The assembly code for the given expression.
+
+    '''
+    s = []
+    stack = Stack()
+    if not reg:
+        reg = Stack(range(7, -1, -1))
+    for part in expression:
+        reg0 = f'r{reg.pop()}'
+        if part.isnumeric() and part not in constants.keys():
+            constants[part] = f'const{"n" if int(part) < 0 else ""}{part}\t.FILL #{part}'
+        if part.isnumeric():
+            s.append(f'LD {reg0}, const{"n" if int(part) < 0 else ""}{part}')
+            stack.push(reg0)
+            continue
+        if part in '+-*/':
+            try:
+                num2 = stack.pop()
+                num1 = stack.pop()
+            except IndexError:
+                raise SyntaxError
+            if num1.isnumeric():
+                reg1 = f'r{reg.pop()}'
+                s.append(f'''LD {reg1}, f"const{'n' if num1 < 0 else str()}{abs(num1)}"''')
+            else:
+                reg1 = num1
+                # s.append(f'AND {reg1}, {num1}, #-1')
+            if num2.isnumeric():
+                reg2 = f'r{reg.pop()}'
+                s.append(f'''LD {reg2}, f"const{'n' if num2 < 0 else str()}{abs(num2)}"''')
+            else:
+                reg2 = num2
+                # s.append(f'AND {reg2}, {num2}, #-1')
+            if part == '+':
+                s.append(f'ADD {reg0}, {reg1}, {reg2}')
+            elif part == '-':
+                s.extend((f'NOT {reg2}, {reg2}', f'ADD {reg2}, {reg2}, x1', f'ADD {reg0}, {reg1}, {reg2}'))
+            elif part == '*':
+                s.extend((f'AND {reg0}, {reg1}, x0',
+                          # f'ADD {reg1}, {reg2}, x0',
+                          f'ADD {reg0}, {reg0}, {reg1}',
+                          f'ADD {reg2}, {reg2}, #-1',
+                          'BRP #-3'))
+            else:
+                raise NotImplementedError(f'Function "{part}" is not yet implemented')
+            stack.push(reg0)
+            reg.push(reg1[1:])
+            reg.push(reg2[1:])
+
+    return s, stack.pop()
 
 if __name__ == '__main__':
     post = in2post('2*(abd*df)- 34/(abd *df-6)', {'abd': ('int', 1), 'df': ('int', 1)})
