@@ -5,59 +5,13 @@ Created on Sun Jun  5 11:41:42 2022
 
 Compiler for the LC-3 assembly language.
 """
-from expressionEvaluator import in2post, eval_postfix, eval_expression
+from expressionEvaluator import in2post, eval_postfix
 
 
 KEYWORDS = ['while', 'if', 'elif', 'else', 'for']
 TYPES = ['int', 'bool', 'string', 'char']
 OPERATIONS = ['+', '-', '*', '/', '%', '=', '!=', '>', '<', '>=', '<=']
 SPECIALOPS = ('++', '--')
-
-
-def makeAsm(tokens, variables, constants) -> str:
-    '''
-    Returns ASM code for the given tokens.
-
-    Parameters
-    ----------
-    tokens : list
-        List of tokens.
-    variables : dict
-        Dictionary where the keys are the variable names, and the values are the types and sizes of the variables.
-
-    Returns
-    -------
-    str
-        ASM code for the given tokens.
-
-    '''
-    s = []
-    if tokens[0][0] == 't':
-        dtype = tokens[0][1]
-        var, size = variables[tokens[1][1]]
-        expr = tokens[2][1]
-        if size > 1:
-            for i in range(size):
-                variables(f'{var}{i if i else ""}\t.FILL {expr}')
-        else:
-            c, reg = eval_expression(expr, variables, constants)
-            s.extend(c)
-
-    return s
-
-
-def generateAsmFile(tokens, variables, filename='a'):
-    constants = dict()
-    inner = []
-    inner.extend(makeAsm(tokens[:3], variables, constants))
-    with open(f'{filename}.asm', 'w') as f:
-        f.write('.ORIG x3000\n')
-        f.write(f'\tJSR #{len(constants)+len(variables)}\n')
-        f.write('\n'.join(c for c in constants.values())+'\n')
-        f.write('\n'.join(f'{v}\t.BLKW #{s}' for v, (_, s) in variables.items())+'\n\t')
-        f.write('\n\t'.join(v for v in inner)+'\n')
-        f.write(open('includes/Stack.asm').read())
-        f.write('\n.END')
 
 
 def tokenize(text):
@@ -89,7 +43,7 @@ def tokenize(text):
                     word, size = word[:-1].split('[')
                 else:
                     size = 1
-                variables[word] = tokens[-1][1], size
+                variables[word] = tokens[-1][1], int(size)
                 tokens.append(('v', word))
                 continue
             if word.startswith(SPECIALOPS):
@@ -122,4 +76,3 @@ def tokenize(text):
 
 if __name__ == '__main__':
     tokens, variables = tokenize(open("test.mat").read())
-    generateAsmFile(tokens, variables)

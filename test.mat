@@ -1,28 +1,27 @@
-int num = 3+5*2-(5+2-5*6)
-char c = 'a'
-
-char ch = c + num
 int alloc[5]
 int arr[5] = [1,2,3,4,5]
+char c = 'a' + 1
+int num
+num = 3+5*2-(5+2-5*6)
+char ch = c + num
+/*
 string s = "hello world"
 arr++
 --arr
 s++
 --s
-c += 3+5*2-(5+2-5*6)
-/*
-if ch > 'd':
+if ch > 'd'
     ch = 'g'
-elif ch == 'd':
+elif ch == 'd'
     ch = 's'
-else:
+else
     ch = 'l'
 
 arr[2] = ch
-for (int i = 0; i < arr.length, i++):
+for (int i = 0; i < arr.length, i++)
     arr[i] = arr[i] + arr[i+1]
 
-while *&s != '\0':
+while *&s != '\0'
     *&s = arr + 65
     &s++
 */

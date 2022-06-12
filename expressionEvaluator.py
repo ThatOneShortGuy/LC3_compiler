@@ -59,7 +59,8 @@ def in2post(expr, variables=None, line=1):
     stack = Stack()
     if variables:
         for var, (varType, size) in variables.items():
-            expr = expr.replace(var, f"'{var}'")
+            expr = expr.replace(var, f"${var}$")
+    isChar = False
     isVar = False
     num = True
     for char in expr:
@@ -94,14 +95,22 @@ def in2post(expr, variables=None, line=1):
             stack.push(char)
             num = False
         elif char == "'":
-            isVar = not isVar
+            isChar = not isChar
             if postfix[-1]:
                 postfix.append('')
-        elif char.isnumeric() or isVar:
+        elif char.isnumeric() or isChar:
             if not num or postfix[-1] and postfix[-1] in '+-*/':
                 postfix.append('')
+            if char.isalpha():
+                char = str(ord(char))
             postfix[-1] += char
             num = True
+        elif char == '$':
+            isVar = not isVar
+            if not num or (postfix[-1] and postfix[-1] in '+-*/'):
+                postfix.append('')
+        elif isVar:
+            postfix[-1] += char
         else:
             raise NameError(f'Encountered undefined variable "{expr[expr.find(char):expr[expr.find(char):].find(" ")+1]}" evaluating expression on line {line}')
     while stack.size():
@@ -149,6 +158,7 @@ def eval_postfix(expr, variables=None, line=1):
                         break
     return stack.pop()
 
+
 def eval_expression(expression, variables, constants, reg=None):
     '''
     Evaluate postfix expression in assembly
@@ -170,8 +180,15 @@ def eval_expression(expression, variables, constants, reg=None):
     stack = Stack()
     if not reg:
         reg = Stack(range(7, -1, -1))
+    elif hasattr(reg, '__iter__'):
+        reg = Stack(reg)
     for part in expression:
+        if part == '':
+            continue
         reg0 = f'r{reg.pop()}'
+        if part in variables.keys():
+            s.append(f'LD {reg0}, {part}')
+            stack.push(reg0)
         if part.isnumeric() and part not in constants.keys():
             constants[part] = f'const{"n" if int(part) < 0 else ""}{part}\t.FILL #{part}'
         if part.isnumeric():
@@ -213,6 +230,7 @@ def eval_expression(expression, variables, constants, reg=None):
             reg.push(reg2[1:])
 
     return s, stack.pop()
+
 
 if __name__ == '__main__':
     post = in2post('2*(abd*df)- 34/(abd *df-6)', {'abd': ('int', 1), 'df': ('int', 1)})
