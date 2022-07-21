@@ -1,11 +1,13 @@
+int s = -10
+print(s)
 int alloc[5]
-int arr[5] = [1,2,3,4,5]
+int arr[5] = [0, 1, 2, 3, 4]
+
 char c = 'a' + 1
 int num
 num = 3+5*2-(5+2-5*6)
 char ch = c + num
 /*
-string s = "hello world"
 arr++
 --arr
 s++

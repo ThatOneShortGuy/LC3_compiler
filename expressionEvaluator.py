@@ -82,6 +82,9 @@ def in2post(expr, variables=None, line=1):
             except IndexError:
                 raise SyntaxError
         elif char in '+-*/':
+            if not postfix[0] and char == '-':
+                postfix[0] += '-'
+                continue
             while char in '+-' and len(stack) and stack.top() in '+-*/':
                 if not postfix[-1]:
                     postfix[-1] += stack.pop()
@@ -99,7 +102,7 @@ def in2post(expr, variables=None, line=1):
             if postfix[-1]:
                 postfix.append('')
         elif char.isnumeric() or isChar:
-            if not num or postfix[-1] and postfix[-1] in '+-*/':
+            if not num or postfix[-1] and postfix[-1] in '+-*/' and len(postfix) > 1:
                 postfix.append('')
             if char.isalpha():
                 char = str(ord(char))
@@ -189,10 +192,10 @@ def eval_expression(expression, variables, constants, reg=None):
         if part in variables.keys():
             s.append(f'LD {reg0}, {part}')
             stack.push(reg0)
-        if part.isnumeric() and part not in constants.keys():
-            constants[part] = f'const{"n" if int(part) < 0 else ""}{part}\t.FILL #{part}'
-        if part.isnumeric():
-            s.append(f'LD {reg0}, const{"n" if int(part) < 0 else ""}{part}')
+        if (part.isnumeric() or (part[0] == '-' and part[1:].isnumeric)) and part not in constants.keys():
+            constants[part] = f'const{"n" if int(part) < 0 else ""}{part if int(part) > 0 else part[1:]}'
+        if part.isnumeric() or (part[0] == '-' and part[1:].isnumeric):
+            s.append(f'LD {reg0}, const{"n" if int(part) < 0 else ""}{part if int(part) > 0 else part[1:]}')
             stack.push(reg0)
             continue
         if part in '+-*/':

@@ -5,8 +5,8 @@ Created on Sun Jun  5 11:41:42 2022
 
 Compiler for the LC-3 assembly language.
 """
+from lib2to3.pgen2 import token
 from expressionEvaluator import in2post, eval_postfix
-from includes.builtins import BUILTINS
 
 
 KEYWORDS = ['while', 'if', 'elif', 'else', 'for']
@@ -31,13 +31,15 @@ def tokenize(text):
         #         inFunc = True
         # elif inFunc and not line.startswith('\t'):
         #     inFunc = False
-        if line.startswith('//') or inComment:
+        if line.startswith('//'):
             continue
         if line.startswith('/*'):
             inComment = True
             continue
         if line.endswith('*/'):
             inComment = False
+            continue
+        if inComment:
             continue
         line = line.split('=')
         for word in line[0].split(' '):
@@ -49,8 +51,8 @@ def tokenize(text):
             if variables and word in variables.keys():
                 tokens.append(('v', word))
                 continue
-
             # if tokens[-1][0] == 't' and word.startswith('('):
+            
             #     '''This is a function definition'''
             #     if word[1:-1] in functions.keys():
             #         raise SyntaxError(f'Function {word[1:-1]} already defined on line {i+1}')
@@ -67,27 +69,7 @@ def tokenize(text):
             # if funcDef:
             #     raise SyntaxError(f'Invalid function ({tokens[-1][1]}) definition on line {i+1}')
             # if inFunc:
-            if word in BUILTINS or word.split('(')[0] in BUILTINS:
-                word = word.split('(')
-                tokens.append(('b', word[0]))
-                if len(word) == 1:
-                    s = ''
-                else:
-                    s = word[1]
-                l = i
-            if tokens and tokens[-1][0] in 'b' and i == l:
-                if ')' in s:
-                    s = s.split(')')[0]
-                    if s.startswith('"'):
-                        tokens.append([tokenize(s) if '=' in s else ('a', (list(s[1:-1])+['\0'])) for s in s.split(',')])
-                    else:
-                        tokens.append([('v', s)])
-                    continue
-                s += ' ' + word
-                continue
-            if tokens[-1][0] in 'b':
-                tokens.append(('args', s))
-                continue
+
             if tokens[-1][0] == 't':
                 if word.endswith(']'):
                     word, size = word[:-1].split('[')
@@ -122,8 +104,8 @@ def tokenize(text):
                 tokens.append(('a', [eval_postfix(in2post(i, line=i)) for i in part]))
             else:
                 tokens.append(('e', in2post(line[1], variables, i+1)))
-    return tokens, variables  # , functions
+    return tokens, variables
 
 
 if __name__ == '__main__':
-    tokens, variables = tokenize(open("test.mat").readline())
+    tokens, variables = tokenize(open("test.mat").read())
